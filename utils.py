@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+from pathlib import Path
 
 def get_list_of_files(directory) -> tuple[list[str], list[str]]:
     """
@@ -55,22 +56,27 @@ def read_md_files(path_md_file, attachments_list):
     attachments_in_md = []
 
     for m in re.finditer(pattern, text):
-        file = m.group(0)
+        file = m.group(1) # 1 catch the file and 2 catch the resized number
+        
+        ext = Path(file).suffix
+        if ext == ".excalidraw":
+            file = file + ".md"
+            print(file)
         for att in attachments_list:
             if(att[0] == file):
                 attachments_in_md.append((att[0], att[1]))
     
     return attachments_in_md
 
-    
+
 def copy_attachments(project_path: str):
     list_of_md_files, list_of_attachments = get_list_of_files(project_path)
     for md_file in  list_of_md_files :
         attachments_in_md = read_md_files(md_file, list_of_attachments)
         current_dir = os.path.dirname(md_file)
         ensure_dir(current_dir, "attachments")
-
         for attachment_name, attachment_path in attachments_in_md:
+            
             # attachment_path is got from read_md_file
             # it is the path directly point the real attachment file
             if os.path.exists(
@@ -78,4 +84,4 @@ def copy_attachments(project_path: str):
             ): continue
             else:
                 target_path = os.path.join(current_dir, "attachments", attachment_name)
-                shutil.copy2(attachment_path, target_path)
+                # shutil.copy2(attachment_path, target_path)
