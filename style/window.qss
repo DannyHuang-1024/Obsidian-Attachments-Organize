@@ -1,0 +1,28 @@
+QWidget {
+  font-family: "Segoe UI";
+  font-size: 14px;
+}
+
+QLineEdit {
+  padding: 8px 10px;
+  border: 1px solid #777;
+  border-radius: 8px;
+}
+
+/* When click or inputing*/
+QLineEdit:focus {
+  border: 2px solid #af42e2;
+}
+
+QPushButton {
+  padding: 8px 12px;
+  max-width: 200px;
+  min-width: 150px;
+  font-weight: bold;
+  border-radius: 8px;
+  background: #a20dd9;
+  color: white;
+}
+
+QPushButton:hover { background: #8d3ea9; }
+QPushButton:pressed { background: #9918c0; }
