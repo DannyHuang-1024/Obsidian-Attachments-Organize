@@ -3,10 +3,14 @@ import re
 import shutil
 from pathlib import Path
 
-def get_list_of_files(directory) -> tuple[list[str], list[str]]:
+def get_list_of_files(directory) -> tuple[list[str], list[(str, str)]]:
     """
     Returns a list of all files in the given directory.
     directory: string
+
+    return: 
+        the first return is the list of all md_files(Whole path)
+        the second return is the list of (attachment_name, attachment_path)
     """
     list_of_attachments = []
     list_of_attachments_path = []
@@ -39,6 +43,7 @@ def ensure_dir(path: str, dir_name: str) -> None:
     attachments_path = os.path.join(path, dir_name)
     os.makedirs(attachments_path, exist_ok=True)
 
+
 def read_md_files(path_md_file, attachments_list):
     """
     This function is used to read md file and find all attachments labels in it
@@ -61,12 +66,12 @@ def read_md_files(path_md_file, attachments_list):
         ext = Path(file).suffix
         if ext == ".excalidraw":
             file = file + ".md"
-            print(file)
         for att in attachments_list:
             if(att[0] == file):
                 attachments_in_md.append((att[0], att[1]))
-    
+
     return attachments_in_md
+
 
 
 def copy_attachments(project_path: str):
@@ -85,3 +90,29 @@ def copy_attachments(project_path: str):
             else:
                 target_path = os.path.join(current_dir, "attachments", attachment_name)
                 # shutil.copy2(attachment_path, target_path)
+
+
+
+def remove_unused_attachments(project_path):
+    """
+    This function will delete all the attachments that not appear in md files.
+    So be careful while using it
+    """
+    list_of_md_files, all_attachments = get_list_of_files(project_path)
+
+    hash_of_attachments = {}
+
+    for md_file in  list_of_md_files :
+        attachments_in_md = read_md_files(md_file, all_attachments)
+        for attachment in attachments_in_md:
+            name = attachment[0] # Only storage the name of the file, without path
+            hash_of_attachments[name] = hash_of_attachments.get(name,0) +1
+    
+
+    for attachment in all_attachments:
+        att_name = attachment[0]
+        path = attachment[1]
+        if att_name not in hash_of_attachments:
+            os.remove(path)
+            print("File removed : {}".format(path))
+
