@@ -24,7 +24,7 @@ class Win(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.edit)
-        layout.addWidget(self.btn)
+        layout.addWidget(self.btn) 
         layout.addWidget(self.btn, alignment=Qt.AlignHCenter)
         layout.addWidget(self.out)
 
@@ -67,16 +67,12 @@ class Win(QWidget):
         pass
 
 if __name__ == "__main__":
-
-    # Main window
     app = QApplication(sys.argv)
 
-    # Load .qss path (a file similar to css)
     qss_path = r"./style/window.qss"
     qss = Path(qss_path).read_text(encoding="utf-8")
     app.setStyleSheet(qss)
 
-    # Create a window
     w = Win()
     w.resize(480, 170)
     w.show()
