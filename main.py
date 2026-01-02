@@ -9,9 +9,10 @@ from windows import Win
 project_path = r".\resources\test"
 
 if __name__ == "__main__":
-    p = Process(project_path)
+    p = Process(project_path, "attachments")
     p.copy_attachments()
     p.remove_unused_attachments()
+    p.remove_empty_directories()
 
     # # Main window
     # app = QApplication(sys.argv)
@@ -26,10 +27,4 @@ if __name__ == "__main__":
     # w.resize(480, 170)
     # w.show()
     # sys.exit(app.exec())
-
-
-
-
-
-
 

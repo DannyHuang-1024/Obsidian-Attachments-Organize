@@ -4,13 +4,16 @@ import shutil
 from pathlib import Path
 
 class Process():
-    def __init__(self, project_path):
+    def __init__(self, project_path, attachments_dir_name="attachments"):
 
         if self.check_path(project_path):
             # If the path is correct
             self.project_path = project_path    
             self.list_of_md_files = []
             self.attachments = []
+            self.copied_flag = False
+
+            self.att_dir_name = attachments_dir_name
 
             # Init Process
             self.get_list_of_files(self.project_path)
@@ -94,24 +97,24 @@ class Process():
         return attachments_in_md
 
 
-
     def copy_attachments(self):
         list_of_md_files, list_of_attachments = self.list_of_md_files, self.attachments
         for md_file in  list_of_md_files :
             attachments_in_md = self.read_md_files(md_file, list_of_attachments)
             current_dir = os.path.dirname(md_file)
-            self.ensure_attachments_dir(current_dir, "attachments")
+            self.ensure_attachments_dir(current_dir, self.att_dir_name)
             for attachment_name, attachment_path in attachments_in_md:
                 
                 # attachment_path is got from read_md_file
                 # it is the path directly point the real attachment file
                 if os.path.exists(
-                    os.path.join(current_dir,"attachments", attachment_name)
+                    os.path.join(current_dir, self.att_dir_name, attachment_name)
                 ): continue
                 else:
-                    target_path = os.path.join(current_dir, "attachments", attachment_name)
+                    target_path = os.path.join(current_dir, self.att_dir_name, attachment_name)
                     shutil.copy2(attachment_path, target_path)
 
+        self.copied_flag = True
 
 
     def remove_unused_attachments(self):
@@ -132,8 +135,41 @@ class Process():
 
         for attachment in all_attachments:
             att_name = attachment[0]
-            path = attachment[1]
-            if att_name not in hash_of_attachments:
-                os.remove(path)
-                print("File removed : {}".format(path))
+            path = Path(attachment[1])
 
+            if att_name not in hash_of_attachments:
+                '''
+                This judge is to delete the attachments exists in project
+                but never used
+                '''
+                path.unlink()
+                print("File removed : {}".format(path))
+            
+            if self.copied_flag:
+                '''
+                This judge is to delete the repeat attachments
+                that are moved to new attachments files
+                '''
+                if path.parent.name != self.att_dir_name :
+                    path.unlink()
+
+
+    def remove_empty_directories(self):
+        top = Path(self.project_path)
+        removed = 0
+
+        for d in sorted(top.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+            if d.is_dir:
+                try:
+                    d.rmdir()
+                    removed += 1
+                except OSError:
+                    pass # not empty or permission issue
+
+        try:
+            top.rmdir()
+            removed += 1
+        except OSError:
+            pass
+
+        return removed
