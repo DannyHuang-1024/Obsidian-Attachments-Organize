@@ -98,6 +98,8 @@ class Process():
 
 
     def copy_attachments(self):
+        if self.list_of_md_files == []:
+            return False
         list_of_md_files, list_of_attachments = self.list_of_md_files, self.attachments
         for md_file in  list_of_md_files :
             attachments_in_md = self.read_md_files(md_file, list_of_attachments)
@@ -115,6 +117,7 @@ class Process():
                     shutil.copy2(attachment_path, target_path)
 
         self.copied_flag = True
+        return True
 
 
     def remove_unused_attachments(self):

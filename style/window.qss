@@ -14,15 +14,35 @@ QLineEdit:focus {
   border: 2px solid #af42e2;
 }
 
-QPushButton {
+QPushButton#copyBtn,
+QPushButton#processBtn,
+QPushButton#deleteBtn {
   padding: 8px 12px;
-  max-width: 200px;
-  min-width: 150px;
+  min-width: 200px;
+  font-weight: bold;
+  font-family: "Segoe UI";
+  border-radius: 6px;
+  background: #ca9cdb;
+  color: black;
+}
+
+QPushButton#copyBtn:hover,
+QPushButton#processBtn:hover,
+QPushButton#deleteBtn:hover { background: #8d3ea9; }
+
+QPushButton#copyBtn:pressed,
+QPushButton#processBtn:pressed,
+QPushButton#deleteBtn:pressed { background: #9918c0; }
+
+
+QPushButton#submitBtn {
+  padding: 8px 12px;
+  min-width: 300px;
   font-weight: bold;
   border-radius: 8px;
   background: #a20dd9;
   color: white;
 }
 
-QPushButton:hover { background: #8d3ea9; }
-QPushButton:pressed { background: #9918c0; }
+QPushButton#submitBtn:hover { background: #8d3ea9; }
+QPushButton#submitBtn:pressed { background: #9918c0; }
