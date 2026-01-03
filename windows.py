@@ -13,7 +13,7 @@ class Win(QWidget):
         self.project_path = None
         self.p = None  # Process object
         
-        self.setWindowTitle("Hello Qt")
+        self.setWindowTitle("Obsidian Organizer")
         self.resize(400, 300)
 
         # -------------------- Components --------------------
@@ -32,7 +32,7 @@ class Win(QWidget):
         self.copy_btn = QPushButton("Copy Attachments")
         self.copy_btn.setObjectName("copyBtn")
         # Delete empty directories button
-        self.delete_btn = QPushButton("Delete Empty Directories")
+        self.delete_btn = QPushButton("Remove Trash")
         self.delete_btn.setObjectName("deleteBtn")
 
         # Add pointer
@@ -69,7 +69,7 @@ class Win(QWidget):
         # Binding function and copy button
         self.copy_btn.clicked.connect(self.copy_attachments)
         # Binding function and delete button
-        self.delete_btn.clicked.connect(self.remove_empty_directories)
+        self.delete_btn.clicked.connect(self.remove_trash)
 
 
         # Let the window accept focus when clicked
@@ -134,14 +134,15 @@ class Win(QWidget):
             QMessageBox.warning(self, "Warning", "No markdown files to process. Please load the project first!")
         pass
     
-    def remove_empty_directories(self):
+    def remove_trash(self):
         if self.p is None:
             QMessageBox.warning(self, "Warning", "Please load the project first!")
             return
         
+        num_att_removed = self.p.remove_unused_attachments()
         num_removed = self.p.remove_empty_directories()
-        QMessageBox.information(self, "Info", f"Removed {num_removed} empty directories.")
-    
+        QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_removed} empty directories.")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

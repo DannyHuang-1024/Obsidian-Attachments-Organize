@@ -29,6 +29,7 @@ class Process():
         else:
             raise ValueError("The project path is not valid! Please check!!!")
 
+
     def get_list_of_files(self, directory) -> tuple[list[str], list[(str, str)]]:
         """
         Returns a list of all files in the given directory.
@@ -49,9 +50,14 @@ class Process():
             files: the files directly inside the root now -> list 
             '''
 
+            # Don't enter hidden directories (prune traversal)
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+
             for file in files:
                 path = os.path.join(root, file)
-                if file.endswith(".md"):
+                ext = self.get_real_extension(path)
+
+                if file.endswith(".md") and ext != 'excalidraw':
                     self.list_of_md_files.append(path)
                 else:
                     list_of_attachments_path.append(path)
@@ -60,6 +66,14 @@ class Process():
             self.attachments = [(x, y) for x,y in zip(list_of_attachments, list_of_attachments_path)]        
         
         return self.list_of_md_files, self.attachments
+
+    def get_real_extension(self,path: str) -> str | None:
+        suffixes = Path(path).suffixes
+        if len(suffixes) >= 2:
+            return suffixes[-2].lstrip(".")
+        if len(suffixes) == 1:
+            return suffixes[0].lstrip(".")
+        return None
 
     def ensure_attachments_dir(self, path: str, dir_name: str) -> None:
         # This function is used to make sure the "attachments" directory exists 
@@ -91,7 +105,8 @@ class Process():
             if ext == ".excalidraw":
                 file = file + ".md"
             for att in attachments_list:
-                if(att[0] == file):
+                if(att[0] == file) and (att[0], att[1]) not in attachments_in_md:
+                    # One attachment link in a md file only store once
                     attachments_in_md.append((att[0], att[1]))
 
         return attachments_in_md
@@ -135,34 +150,39 @@ class Process():
                 name = attachment[0] # Only storage the name of the file, without path
                 hash_of_attachments[name] = hash_of_attachments.get(name,0) +1
         
+        removed = 0
 
         for attachment in all_attachments:
             att_name = attachment[0]
             path = Path(attachment[1])
+            print("removed: " + att_name)
 
             if att_name not in hash_of_attachments:
                 '''
                 This judge is to delete the attachments exists in project
                 but never used
                 '''
+                removed += 1
                 path.unlink()
-                print("File removed : {}".format(path))
+                all_attachments.remove(attachment)
+                # print("File removed : {}".format(path))
             
-            if self.copied_flag:
+            elif self.copied_flag:
                 '''
                 This judge is to delete the repeat attachments
                 that are moved to new attachments files
                 '''
                 if path.parent.name != self.att_dir_name :
                     path.unlink()
-
+                    all_attachments.remove(attachment)
+        return removed
 
     def remove_empty_directories(self):
         top = Path(self.project_path)
         removed = 0
 
         for d in sorted(top.rglob("*"), key=lambda p: len(p.parts), reverse=True):
-            if d.is_dir:
+            if d.is_dir():
                 try:
                     d.rmdir()
                     removed += 1
