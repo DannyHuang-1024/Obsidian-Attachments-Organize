@@ -14,8 +14,21 @@ QLineEdit:focus {
   border: 2px solid #af42e2;
 }
 
-QPushButton#copyBtn,
-QPushButton#processBtn,
+
+QPushButton#processBtn {
+  padding: 8px 12px;
+  min-width: 300px;
+  font-weight: bold;
+  border-radius: 8px;
+  background: #a20dd9;
+  color: white;
+}
+
+QPushButton#processBtn:hover { background: #b71d22; }
+QPushButton#processBtn:pressed { background: #a51e1e; }
+
+
+QPushButton#settingsBtn,
 QPushButton#deleteBtn {
   padding: 8px 12px;
   min-width: 200px;
@@ -26,13 +39,19 @@ QPushButton#deleteBtn {
   color: black;
 }
 
-QPushButton#copyBtn:hover,
-QPushButton#processBtn:hover,
-QPushButton#deleteBtn:hover { background: #8d3ea9; }
 
-QPushButton#copyBtn:pressed,
-QPushButton#processBtn:pressed,
-QPushButton#deleteBtn:pressed { background: #9918c0; }
+QPushButton#settingsBtn:hover,
+QPushButton#deleteBtn:hover { 
+    background: #8d3ea9;
+    color: white;
+}
+
+
+QPushButton#settingsBtn:pressed,
+QPushButton#deleteBtn:pressed { 
+    background: #9918c0;
+    color: white;
+}
 
 
 QPushButton#submitBtn {

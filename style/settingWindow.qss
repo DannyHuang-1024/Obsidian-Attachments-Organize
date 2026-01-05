@@ -1,0 +1,25 @@
+QLineEdit {
+  padding: 8px 10px;
+  border: 1px solid #777;
+  border-radius: 8px;
+}
+
+/* When click or inputing*/
+QLineEdit:focus {
+  border: 2px solid #b567d8;
+}
+
+
+QPushButton#closeBtn,
+QPushButton#saveBtn {
+  padding: 6px 10px;
+  min-width: 100px;
+  font-weight: bold;
+  font-family: "Segoe UI";
+  border-radius: 6px;
+  background: #ca9cdb;
+  color: black;
+}
+
+QPushButton#closeBtn:hover { background: #8d3ea9; color: white;}
+QPushButton#saveBtn:hover { background: #7758c4; color: white; }

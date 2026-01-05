@@ -1,16 +1,62 @@
 import sys
 from pathlib import Path
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
-from PySide6.QtWidgets import QLineEdit, QLabel,QVBoxLayout, QHBoxLayout 
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QPushButton, QMessageBox,
+    QLineEdit, QLabel,QVBoxLayout, QHBoxLayout,
+    QDialog
+)
 
 from utils import Process
+
+
+class SettingWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Set Attachment Folder Name")
+        self.edit = QLineEdit(self)
+        self.edit.setPlaceholderText("Enter Attachments folder name")
+        self.close_btn = QPushButton("Close")
+        self.close_btn.setObjectName("closeBtn")
+        self.close_btn.clicked.connect(self.accept)  # closes dialog
+        self.save_btn = QPushButton("Save")
+        self.save_btn.setObjectName("saveBtn")
+        self.save_btn.clicked.connect(self.save_settings)
+        
+        qss_path = r"./style/settingWindow.qss"
+        qss = Path(qss_path).read_text(encoding="utf-8")
+        self.setStyleSheet(qss)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.edit)
+    
+        row = QHBoxLayout()
+        row.addWidget(self.save_btn)
+        row.addWidget(self.close_btn)
+        layout.addLayout(row)
+    
+    def save_settings(self):
+        folder_name = self.edit.text().strip()
+        if folder_name:
+            # Save the folder name to settings (not implemented here)
+            QMessageBox.information(self, "Info", f"Attachment folder name set to: {folder_name}")
+        else:
+            folder_name = "attachments"  # default name
+            QMessageBox.information(self, "Info", f"Attachment folder name set to default: {folder_name}")
+
+        # Store the folder name
+        self.folder_name = folder_name
+        self.accept()  # Close the dialog
+    
+    def get_folder_name(self) -> str:
+        return getattr(self, "folder_name", "")
 
 
 class Win(QWidget):
     def __init__(self):
         super().__init__()
         self.project_path = None
+        self.attchament_folder_name = "attachments"
         self.p = None  # Process object
         
         self.setWindowTitle("Obsidian Organizer")
@@ -28,11 +74,12 @@ class Win(QWidget):
         # Process button
         self.process_btn = QPushButton("Process")
         self.process_btn.setObjectName("processBtn")
-        # Copy button
-        self.copy_btn = QPushButton("Copy Attachments")
-        self.copy_btn.setObjectName("copyBtn")
+        # Settings button
+        self.settings_btn = QPushButton("Settings")
+        self.settings_btn.setObjectName("settingsBtn")
+
         # Delete empty directories button
-        self.delete_btn = QPushButton("Remove Trash")
+        self.delete_btn = QPushButton("Remove Empty Dirs")
         self.delete_btn.setObjectName("deleteBtn")
 
         # Add pointer
@@ -48,32 +95,36 @@ class Win(QWidget):
         layout.addWidget(self.edit)
         # layout.addWidget(self.btn, alignment=Qt.AlignHCenter)
         layout.addWidget(self.btn)
-        layout.addWidget(self.out)
+        layout.addWidget(self.process_btn)
 
         row = QHBoxLayout() # QHBoxLayout is horizontal layout
-        row.addWidget(self.process_btn, 1)
-        row.addStretch() # This creates a flexible space between the two buttons
-        row.addWidget(self.copy_btn, 1)        
+        row.addWidget(self.delete_btn, 1)
+        layout.addStretch(1) 
+        row.addWidget(self.settings_btn, 1)
         layout.addLayout(row)
-        row.setSpacing(10)  # Set spacing between buttons
-        layout.addWidget(self.delete_btn)
-
-        # layout.addStretch(1) 
-        
+        layout.addWidget(self.out)
     
         # Binding function and submit button
         self.btn.clicked.connect(self.on_submit)
         self.edit.returnPressed.connect(self.on_submit)
         # Binding function and process button
-        self.process_btn.clicked.connect(self.load_project)
-        # Binding function and copy button
-        self.copy_btn.clicked.connect(self.copy_attachments)
+        self.process_btn.clicked.connect(self.process)
         # Binding function and delete button
         self.delete_btn.clicked.connect(self.remove_trash)
-
+        # Binding function and settings button
+        self.settings_btn.clicked.connect(self.open_settings)
 
         # Let the window accept focus when clicked
         self.setFocusPolicy(Qt.StrongFocus)
+    
+    def open_settings(self):
+        # modal (block main window until closed)
+        dlg = SettingWindow(self)
+        if dlg.exec() == QDialog.Accepted:
+            folder_name = dlg.get_folder_name()
+            if folder_name:
+                self.out.setText(f"Attachment folder name set to: {folder_name}")
+                self.attchament_folder_name = folder_name
 
     def mousePressEvent(self, event):
         # remove focus from QLineEdit after click any where on the background
@@ -84,10 +135,15 @@ class Win(QWidget):
         super().mousePressEvent(event)
 
     def on_submit(self):
+        """
+        Submit the project path
+        and load project if valid
+        """
         text = self.edit.text()
         judge = self.check_path(text)
         if judge:
             self.out.setText(f"The project path is set: {text}")
+            self.load_project()
     
     def check_path(self, path):
         if path == "":
@@ -111,7 +167,8 @@ class Win(QWidget):
         if self.project_path is None:
             QMessageBox.warning(self, "Warning", "Please set the project path first!")
             return
-        self.p = Process(self.project_path, "attachments")
+        self.p = Process(self.project_path, self.attchament_folder_name)
+
         num_md_files = len(self.p.list_of_md_files)
         num_attachments = len(self.p.attachments)
 
@@ -120,8 +177,17 @@ class Win(QWidget):
             self.project_path = None
             return
 
-        self.p = Process(self.project_path, "attachments")
         QMessageBox.information(self, "Info", f"Process done!\nFind {num_md_files} markdown files.\nFind {num_attachments} attachments.")
+
+    def process(self):
+        if self.p is None:
+            QMessageBox.warning(self, "Warning", "Please load the project first!")
+            return
+        
+        self.p.remove()
+        num_removed = self.p.remove_empty_directories()
+        # QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_removed} empty directories.")
+        QMessageBox.information(self, "Info", "Removal process completed")
 
     def copy_attachments(self):
         if self.p is None:
@@ -139,10 +205,10 @@ class Win(QWidget):
             QMessageBox.warning(self, "Warning", "Please load the project first!")
             return
         
-        self.p.remove()
-        num_removed = self.p.remove_empty_directories()
-        # QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_removed} empty directories.")
-        QMessageBox.information(self, "Info", "Removal process completed")
+        num_att_removed = self.p.remove()
+        num_dir_removed = self.p.remove_empty_directories()
+        QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_dir_removed} empty directories.")
+        
 
 
 if __name__ == "__main__":
