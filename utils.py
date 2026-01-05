@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import stat
 from pathlib import Path
 
 class Process():
@@ -133,7 +134,39 @@ class Process():
 
         self.copied_flag = True
         return True
+    
+    def rescan(self):
+        self.list_of_md_files = []
+        self.attachments = []
+        self.get_list_of_files(self.project_path)
 
+
+    def remove(self):
+        """
+        Use some trick to remove unused attachments that are in the specified atts's dir
+        1. First move all used attachments to a special dir
+        2. Then remove all attachments in the original attachments dir(So the unused attachments are removed)
+        3. Finally move back all used attachments to the original attachments dir
+        """
+
+        temp_name = self.att_dir_name
+        self.att_dir_name = "temp_attachments_dir_for_removal"
+        self.copy_attachments() # Copy all used attachments to temp dir
+        self.rescan() # Rescan the project to update the attachments list
+
+        # Remove all unused attachments in the original attachments dir
+        self.remove_unused_attachments()
+        self.remove_empty_directories()
+
+        # Move back all used attachments to the original attachments dir
+        self.att_dir_name = temp_name
+        self.rescan()
+        self.copy_attachments()
+        self.rescan()
+
+        # Finally remove the temp dir and its empty parent dirs
+        self.remove_unused_attachments()
+        self.remove_empty_directories()
 
     def remove_unused_attachments(self):
         """
@@ -141,6 +174,7 @@ class Process():
         So be careful while using it
         """
         list_of_md_files, all_attachments = self.list_of_md_files, self.attachments
+
 
         hash_of_attachments = {}
 
@@ -152,10 +186,12 @@ class Process():
         
         removed = 0
 
-        for attachment in all_attachments:
+        for attachment in all_attachments[:]:
+            # Use a copy of the list to iterate
+            # Because we will delete some elements from the original list
             att_name = attachment[0]
             path = Path(attachment[1])
-            print("removed: " + att_name)
+            # print("removed: " + att_name)
 
             if att_name not in hash_of_attachments:
                 '''
@@ -177,22 +213,52 @@ class Process():
                     all_attachments.remove(attachment)
         return removed
 
+    def _try_make_writable(self, p: Path) -> None:
+        """Best-effort: remove read-only attribute (mostly useful for files on Windows)."""
+        try:
+            os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
+        except Exception:
+            pass
+
     def remove_empty_directories(self):
         top = Path(self.project_path)
         removed = 0
+        failed = []  # collect failures so you can debug
 
-        for d in sorted(top.rglob("*"), key=lambda p: len(p.parts), reverse=True):
-            if d.is_dir():
+        # Walk bottom-up (safer than rglob: avoids crashing on permission-troubled dirs)
+        for root, dirs, files in os.walk(top, topdown=False, onerror=lambda e: None):
+            root_path = Path(root)
+
+            # Optional: if you want to skip deleting anything under special dirs
+            # (uncomment if needed)
+            # if root_path.name in {".obsidian", ".git"}:
+            #     continue
+
+            # Remove common Windows junk files that prevent "empty" dirs
+            for junk in ("desktop.ini", "Thumbs.db"):
+                jp = root_path / junk
+                if jp.exists() and jp.is_file():
+                    try:
+                        self._try_make_writable(jp)
+                        jp.unlink()
+                    except Exception:
+                        pass
+
+            for dname in dirs:
+                d = root_path / dname
                 try:
                     d.rmdir()
                     removed += 1
-                except OSError:
-                    pass # not empty or permission issue
+                except PermissionError as e:
+                    # try again after making writable (best-effort)
+                    self._try_make_writable(d)
+                    try:
+                        d.rmdir()
+                        removed += 1
+                    except Exception as e2:
+                        failed.append((str(d), repr(e2)))
+                except OSError as e:
+                    # not empty, or other issue
+                    failed.append((str(d), repr(e)))
 
-        try:
-            top.rmdir()
-            removed += 1
-        except OSError:
-            pass
-
-        return removed
+        return removed, failed

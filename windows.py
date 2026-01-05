@@ -139,9 +139,10 @@ class Win(QWidget):
             QMessageBox.warning(self, "Warning", "Please load the project first!")
             return
         
-        num_att_removed = self.p.remove_unused_attachments()
+        self.p.remove()
         num_removed = self.p.remove_empty_directories()
-        QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_removed} empty directories.")
+        # QMessageBox.information(self, "Info", f"Removed {num_att_removed} unused attachments and {num_removed} empty directories.")
+        QMessageBox.information(self, "Info", "Removal process completed")
 
 
 if __name__ == "__main__":
